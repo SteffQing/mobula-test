@@ -2,140 +2,101 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Mobula Test - $APE Market Data</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f0f0f0;
-      }
-      .container {
-        max-width: 800px;
-        margin: 2% auto;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        font-size: 24px;
-        margin-bottom: 10px;
-        color: #333;
-      }
-      h2 {
-        font-size: 18px;
-        margin-top: 20px;
-        margin-bottom: 10px;
-        color: #444;
-      }
-      p {
-        font-size: 16px;
-        line-height: 1.6;
-        color: #666;
-      }
-      .input-group {
-        margin-bottom: 20px;
-      }
-      input[type="text"] {
-        padding: 8px;
-        font-size: 14px;
-        margin-right: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-      }
-      button {
-        padding: 8px 16px;
-        font-size: 14px;
-        background-color: #007bff;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-      button:hover {
-        background-color: #0056b3;
-      }
-      .error {
-        color: #d32f2f;
-        font-size: 14px;
-        margin-top: 10px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-      }
-      th,
-      td {
-        padding: 8px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      @media (max-width: 600px) {
-        .container {
-          margin: 5% 10px;
-          padding: 15px;
-        }
-        input[type="text"],
-        button {
-          width: 100%;
-          margin-bottom: 10px;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="container">
-      <h1>Mobula Test - $APE Market Data</h1>
-      <p>View price, volume, and liquidity data for $APE token on Binance Smart Chain.</p>
-      <div class="input-group">
-        <label>
-          From (DD-MM-YYYY):
-          <input type="text" id="fromDate" value="01-03-2023" />
-        </label>
-        <label>
-          To (DD-MM-YYYY):
-          <input type="text" id="toDate" value="04-04-2023" />
-        </label>
-        <button onclick="fetchData()">Fetch Data</button>
+    <header class="site-header" role="banner">
+      <div class="container">
+        <h1 class="title">$APE Market Data</h1>
+        <p class="subtitle">View price, volume, and liquidity for the selected date range.</p>
       </div>
-      <p id="error" class="error"></p>
-      <h2>Price History (USD)</h2>
-      <table id="priceTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Price (USD)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <h2>Volume History (USD)</h2>
-      <table id="volumeTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Volume (USD)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <h2>Liquidity History (SRG)</h2>
-      <table id="liquidityTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Liquidity (SRG)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <script src="app.js"></script>
+    </header>
+
+    <main class="container" role="main">
+      <section aria-labelledby="controls-heading" class="card controls">
+        <div class="controls-grid">
+          <div class="field">
+            <label for="fromDate">From (DD-MM-YYYY)</label>
+            <input
+              id="fromDate"
+              name="fromDate"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="DD-MM-YYYY"
+              pattern="\\d{2}-\\d{2}-\\d{4}"
+              value="01-03-2023"
+              aria-describedby="dateHelp"
+            />
+          </div>
+
+          <div class="field">
+            <label for="toDate">To (DD-MM-YYYY)</label>
+            <input
+              id="toDate"
+              name="toDate"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="DD-MM-YYYY"
+              pattern="\\d{2}-\\d{2}-\\d{4}"
+              value="04-04-2023"
+              aria-describedby="dateHelp"
+            />
+          </div>
+
+          <div class="field">
+            <label for="timeframe">Timeframe</label>
+            <select id="timeframe" name="timeframe">
+              <option value="auto" selected>Auto</option>
+              <option value="hourly">Hourly</option>
+              <option value="daily">Daily</option>
+            </select>
+          </div>
+
+          <div class="actions">
+            <button id="fetchBtn" type="button" class="btn btn-primary">Fetch Data</button>
+          </div>
+        </div>
+
+        <p id="dateHelp" class="help">Tip: Use the DD-MM-YYYY format. Ranges longer than 30 days are truncated.</p>
+        <p id="error" class="error" role="alert" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="table-heading" class="card">
+        <div class="card-header">
+          <h2 id="table-heading">Market History</h2>
+          <div class="meta">
+            <span id="activeTimeframe" class="badge">—</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="marketTable">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Price (USD)</th>
+                <th scope="col">Volume (USD)</th>
+                <th scope="col">Liquidity (SRG)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty" hidden>No data found for the selected range.</div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <small>Powered by Mobula Test API • UTC-based dates</small>
+      </div>
+    </footer>
+
+    <script src="./app.js" defer></script>
   </body>
 </html>

@@ -1,63 +1,213 @@
-# 🧠 Mobula Test
+# 📊 $APE Market Data Service – Mobula Technical Test
 
-This project is a custom implementation of a token price oracle and liquidity monitoring tool designed to work efficiently with EVM-compatible networks. It fetches real-time and archival data from multiple RPC providers using intelligent fallbacks and optimizations.
+This project was built as part of the **Mobula Technical Test**. The goal was to implement a data collection service and API for a token’s **price**, **volume**, and **liquidity**, tracked at an **hourly resolution**.
 
-## ✨ Features
+It includes:
 
-- **Token Price Calculation**:
+- A backend API to serve the processed market data
+- A PostgreSQL-backed caching layer (NeonDB)
+- A Redis + in-memory fallback setup
+- Optional web-based dashboard (WIP) for visual inspection of results
 
-  - Calculates token prices by combining raw pool data (e.g., `calculatePrice()`) and SRG price (via `getSRGPrice()`), normalized using standard 18-decimal scaling.
-  - Example:
+---
 
-    ```ts
-    const APE_price_in_USD = (calculatePrice() * getSRGPrice()) / 10 ** 18;
-    ```
+## ⚙️ Design Philosophy
 
-- **Liquidity Monitoring**:
+Mobula works at the intersection of **on-chain data** and **real-time querying**, which demands efficient and reliable access to EVM state across time. To handle that, this project:
 
-  - Monitors and processes token liquidity information using on-chain pool reserves.
+- Collects data **hourly**, using a block-by-block simulation loop
+- Stores clean hourly snapshots in a Postgres DB
+- Exposes multiple endpoints to read data
+- Uses **fallback RPC strategy** to navigate provider limits
 
-- **Block Estimation & Replay**:
+---
 
-  - Capable of fetching and re-processing data for estimated future block numbers (e.g., one hour later) to model future liquidity states.
+## 🛠️ Architecture Overview
 
-## ⚙️ Tech Stack
-
-- **RPC Providers**:
-
-  - `GetBlock` (primary for public data)
-  - `Ankr` and `QuickNode` (used specifically for **archival data**)
-
-- **Fallback Strategy**:
-
-  - A fallback mechanism ensures that if one RPC fails or doesn’t have archival capabilities, others take over.
-  - This increases resilience and reliability across different networks and data types.
-  - Public data (latest blocks, reserves) → Queried via **GetBlock**
-  - Archival data (past reserves, block-specific states) → Queried via **Ankr**/**QuickNode**
-
-- **Optimizations**:
-
-  - **Multicall**: Aggregates multiple contract calls into a single RPC call, drastically reducing the number of network requests.
-  - **Batching with `Promise.all()`**: Used for parallel data fetching scenarios.
-  - Combined, these reduce RPC costs—especially important when using freemium tiers from Ankr, QuickNode, and GetBlock.
-
-## 📦 Structure
-
-- `calculatePrice()`: Reads pair reserves and computes price ratios.
-- `getSRGPrice()`: Fetches the price of the SRG token in USD (or other base).
-- `estimateBlockOneHourLater()`: Projects future block height and replays logic to forecast liquidity/price.
-- `getLiquidityAndPrice()`: Combines all steps—fetches reserves, computes prices, and logs results.
-
-## 🧪 Example Usage
-
-```ts
-const reserves = await getLiquidityAndPrice(pairAddress);
-const futureBlock = await estimateBlockOneHourLater();
-await rerunPriceLogicAtBlock(futureBlock);
+```text
+             +------------------------+
+             |  Express Server (API) |
+             +-----------+------------+
+                         |
+         +---------------+----------------+
+         | getPrice / getVolume / getAll  |
+         +---------------+----------------+
+                         |
+                 +-------v-------+
+                 |   NeonDB      |
+                 +-------+-------+
+                         |
+        +----------------+-----------------+
+        | Redis (cache)      In-memory fallback
+        +--------------------------------------+
 ```
 
-## 📋 Notes
+---
 
-- Ankr and QuickNode **must be configured with archival access** to fetch historical block data.
-- Multicall requires the **Multicall2** contract to be deployed on the target network.
-# mobula-test
+## 🚀 Features
+
+- **API Endpoints**
+
+  - `/price`: Token price over time (hourly)
+  - `/volume`: Trading volume snapshots
+  - `/liquidity`: Liquidity snapshots
+  - `/all`: Returns price, volume, and liquidity combined
+
+- **Hourly Timeframe Tracking**
+
+  - Fetches market data per hour using constant block-step simulation
+  - Normalizes all values (price, volume, liquidity) using token-specific decimal math
+
+- **Backend Components**
+
+  - Express.js REST API
+  - NeonDB (PostgreSQL) for persistent market data storage
+  - Redis + in-memory as cache layer
+  - Type-safe constants for precision handling
+
+- **Node Fallback Strategy**
+
+  - Prioritizes reliable archival access while staying within rate limits:
+
+    ```
+    [ Ankr ➝ QuickNode ➝ Public RPCs ➝ GetBlock ]
+    ```
+
+    - `Ankr` & `QuickNode`: Used for archival access and performance
+    - `Public RPCs`: Used for low-cost access to recent block data
+    - `GetBlock`: Additional freemium-tier backup
+
+---
+
+## 🧠 Why This Setup?
+
+Freemium accounts on providers like Ankr or QuickNode come with **request limits and latency risks**. To ensure resilience, a fallback transport using `viem`'s `fallback()` strategy dynamically rotates between working nodes.
+
+This ensures:
+
+- ✅ Reliable data fetches even under provider downtime
+- ✅ Cost control under API key rate limits
+- ✅ Smooth archival access to blocks as far back as token creation
+
+---
+
+## 📦 Tech Stack
+
+### Backend
+
+- **TypeScript**, **Node.js**
+- **Express** for the API
+- **@neondatabase/serverless** for PostgreSQL
+- **@upstash/redis** for Redis
+- **Viem** for EVM contract and blockchain interaction
+- **dotenv**, **axios**, **node-cron**
+
+---
+
+## 🧮 Constants & Math
+
+Token-specific decimal handling:
+
+| Metric           | Decimal Precision |
+| ---------------- | ----------------- |
+| Volume           | 36                |
+| Liquidity        | 9                 |
+| Price            | 27                |
+| Calculated Price | 18                |
+
+Block-based simulation constants:
+
+| Constant              | Value      |
+| --------------------- | ---------- |
+| Creation Block Number | 26,087,006 |
+| Block Steps/Hour      | 1,200      |
+| One Hour (seconds)    | 3600       |
+
+---
+
+## 📁 SRC Folder Structure
+
+```
+.
+├── constants/
+│   ├── decimals.ts
+│   └── index.ts
+├── db/
+│   ├── neon.ts
+│   ├── redis.ts
+│   └── in-memory.ts
+├── utils/
+│   ├── abi.ts
+│   ├── client.ts
+│   ├── config.ts
+│   └── index.ts
+├── index.ts
+```
+
+---
+
+## 📊 API Endpoints
+
+| Endpoint     | Query Params              | Description                       |
+| ------------ | ------------------------- | --------------------------------- |
+| `/price`     | `from`, `to` (DD-MM-YYYY) | Fetches price chart data          |
+| `/volume`    | `from`, `to`              | Volume per hour                   |
+| `/liquidity` | `from`, `to`              | Liquidity over time               |
+| `/all`       | `from`, `to`              | Combined price, volume, liquidity |
+
+⏳ **Note**: Date ranges are capped at 30 days to optimize performance.
+
+---
+
+## 📦 Installation & Setup
+
+1. **Install dependencies**
+
+```bash
+npm install
+```
+
+2. **Add your environment variables in `.env`**
+
+```env
+DATABASE_URL=your_neon_url
+ANKR_RPC=https://rpc.ankr.com/bsc
+QUICKNODE_RPC=https://your-node-url
+GETBLOCK_RPC=https://eth.getblock.io/mainnet/?api_key=...
+```
+
+3. **Run the app**
+
+```bash
+npm start
+```
+
+Then open [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 🧪 Example Query
+
+```http
+GET /all?from=01-08-2025&to=05-08-2025
+```
+
+```json
+{
+  "data": [
+    {
+      "timestamp": 1722556800,
+      "price": "0.002435",
+      "volume": "1520.2039482",
+      "liquidity": "10423.5"
+    },
+    ...
+  ]
+}
+```
+
+---
+
+## 📝 License
+
+ISC License

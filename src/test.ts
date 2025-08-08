@@ -1,7 +1,7 @@
-import track from "./api/tracker";
+import track from "./services/tracker";
 (async () => {
   // console.time("estimateBlockOneHourLater");
-  // const block = await db.getAll(CONTRACT_ADDRESS, 1672700400, 1780562800);
+  // const block = await track();
   // console.timeEnd("estimateBlockOneHourLater");
   // console.log(block[block.length - 1]);
 

@@ -5,7 +5,8 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "test": "ts-node src/test.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "serve": "node dst/index.js"
   },
   "keywords": [
     "blockchain",

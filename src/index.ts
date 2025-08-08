@@ -1,9 +1,11 @@
 import express from "express";
+import cors from "cors";
 import { CONTRACT_ADDRESS } from "./constants";
 import db from "./db/neon";
 import { parseDate } from "./utils";
 
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 3000;
 
 const getTimestamps = (req: express.Request) => {
@@ -76,3 +78,5 @@ app.get("/all", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// module.exports = app;

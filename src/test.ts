@@ -1,7 +1,4 @@
-import { formatUnits } from "viem";
-import main from "./api";
-import db from "./db/neon";
-import { CONTRACT_ADDRESS } from "./constants";
+import track from "./api/tracker";
 (async () => {
   // console.time("estimateBlockOneHourLater");
   // const block = await db.getAll(CONTRACT_ADDRESS, 1672700400, 1780562800);
@@ -9,7 +6,7 @@ import { CONTRACT_ADDRESS } from "./constants";
   // console.log(block[block.length - 1]);
 
   try {
-    main();
+    track();
   } catch (error) {
     console.error((error as Error).message);
   }

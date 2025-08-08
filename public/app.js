@@ -1,5 +1,3 @@
-const db = require("../dst/db/neon");
-
 function parseDate(dateStr) {
   const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(dateStr);
   if (!match) {
@@ -53,7 +51,13 @@ async function fetchData() {
       document.getElementById("toDate").value = formatDate(toTimestamp);
       errorEl.textContent = "Range truncated to 1 month.";
     }
-    const data = await db.default.getAll("0x43C3EBaFdF32909aC60E80ee34aE46637E743d65", from, to);
+    const granularity = toTimestamp - fromTimestamp > 7 * 24 * 3600 ? "daily" : "hourly";
+    const url = `http://localhost:3000/all?from=${from}&to=${formatDate(toTimestamp)}&granularity=${granularity}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
+    }
+    const data = await response.json();
     updateTable("priceTable", data.priceHistory);
     updateTable("volumeTable", data.volumeHistory);
     updateTable("liquidityTable", data.liquidityHistory);

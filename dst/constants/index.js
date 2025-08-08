@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ONE_HOUR = exports.BLOCK_STEPS_PER_HOUR = exports.CREATION_BLOCK_NUMBER = exports.STEPS = exports.CONTRACT_ADDRESS = void 0;
+var CONTRACT_ADDRESS = "0x43C3EBaFdF32909aC60E80ee34aE46637E743d65";
+exports.CONTRACT_ADDRESS = CONTRACT_ADDRESS;
+var STEPS = 5000;
+exports.STEPS = STEPS;
+var CREATION_BLOCK_NUMBER = 26087006;
+exports.CREATION_BLOCK_NUMBER = CREATION_BLOCK_NUMBER;
+var BLOCK_STEPS_PER_HOUR = 1200;
+exports.BLOCK_STEPS_PER_HOUR = BLOCK_STEPS_PER_HOUR;
+var ONE_HOUR = 60 * 60; // 1 hour
+exports.ONE_HOUR = ONE_HOUR;

@@ -4,7 +4,8 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "test": "ts-node src/test.ts"
+    "test": "ts-node src/test.ts",
+    "build": "tsc"
   },
   "keywords": [
     "blockchain",
